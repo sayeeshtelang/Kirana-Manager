@@ -1,0 +1,129 @@
+// Central definition of roles and permissions for the multi-business system.
+// A single source of truth so backend enforcement and frontend UI stay in sync
+// (the frontend receives this same map via /api/business/me).
+
+const ROLES = {
+  OWNER: 'owner',
+  ADMIN: 'admin',
+  MANAGER: 'manager',
+  CASHIER: 'cashier',
+  INVENTORY_STAFF: 'inventory_staff',
+};
+
+const ALL_ROLES = Object.values(ROLES);
+
+// Granular permissions. Keep names stable; controllers check these,
+// never raw role strings, so role->permission mapping can change freely.
+const PERMISSIONS = {
+  BUSINESS_MANAGE_SETTINGS: 'business:manage_settings',
+  BUSINESS_VIEW_ANALYTICS: 'business:view_analytics',
+  BUSINESS_MANAGE_USERS: 'business:manage_users',
+
+  PRODUCTS_VIEW: 'products:view',
+  PRODUCTS_MANAGE: 'products:manage',
+
+  CATEGORIES_VIEW: 'categories:view',
+  CATEGORIES_MANAGE: 'categories:manage',
+
+  INVENTORY_VIEW: 'inventory:view',
+  INVENTORY_MANAGE: 'inventory:manage',
+
+  SUPPLIERS_VIEW: 'suppliers:view',
+  SUPPLIERS_MANAGE: 'suppliers:manage',
+
+  PURCHASE_ORDERS_VIEW: 'purchase_orders:view',
+  PURCHASE_ORDERS_MANAGE: 'purchase_orders:manage',
+
+  CUSTOMERS_VIEW: 'customers:view',
+  CUSTOMERS_MANAGE: 'customers:manage',
+
+  KHATTA_VIEW: 'khatta:view',
+  KHATTA_MANAGE: 'khatta:manage',
+
+  BILLING_CREATE: 'billing:create',
+  BILLING_VIEW_HISTORY: 'billing:view_history',
+  BILLING_VOID: 'billing:void',
+
+  EMPLOYEES_VIEW: 'employees:view',
+  EMPLOYEES_MANAGE: 'employees:manage',
+
+  REPORTS_VIEW: 'reports:view',
+
+  DASHBOARD_VIEW: 'dashboard:view',
+};
+
+const ALL_PERMISSIONS = Object.values(PERMISSIONS);
+
+// Role -> permission set. Owner implicitly has everything (handled in middleware),
+// but is listed explicitly here too for clarity when serialized to the frontend.
+const ROLE_PERMISSIONS = {
+  [ROLES.OWNER]: ALL_PERMISSIONS,
+
+  [ROLES.ADMIN]: [
+    PERMISSIONS.BUSINESS_VIEW_ANALYTICS,
+    PERMISSIONS.BUSINESS_MANAGE_USERS,
+    PERMISSIONS.PRODUCTS_VIEW, PERMISSIONS.PRODUCTS_MANAGE,
+    PERMISSIONS.CATEGORIES_VIEW, PERMISSIONS.CATEGORIES_MANAGE,
+    PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.INVENTORY_MANAGE,
+    PERMISSIONS.SUPPLIERS_VIEW, PERMISSIONS.SUPPLIERS_MANAGE,
+    PERMISSIONS.PURCHASE_ORDERS_VIEW, PERMISSIONS.PURCHASE_ORDERS_MANAGE,
+    PERMISSIONS.CUSTOMERS_VIEW, PERMISSIONS.CUSTOMERS_MANAGE,
+    PERMISSIONS.KHATTA_VIEW, PERMISSIONS.KHATTA_MANAGE,
+    PERMISSIONS.BILLING_CREATE, PERMISSIONS.BILLING_VIEW_HISTORY, PERMISSIONS.BILLING_VOID,
+    PERMISSIONS.EMPLOYEES_VIEW, PERMISSIONS.EMPLOYEES_MANAGE,
+    PERMISSIONS.REPORTS_VIEW,
+    PERMISSIONS.DASHBOARD_VIEW,
+  ],
+
+  [ROLES.MANAGER]: [
+    PERMISSIONS.BUSINESS_VIEW_ANALYTICS,
+    PERMISSIONS.PRODUCTS_VIEW, PERMISSIONS.PRODUCTS_MANAGE,
+    PERMISSIONS.CATEGORIES_VIEW, PERMISSIONS.CATEGORIES_MANAGE,
+    PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.INVENTORY_MANAGE,
+    PERMISSIONS.SUPPLIERS_VIEW, PERMISSIONS.SUPPLIERS_MANAGE,
+    PERMISSIONS.PURCHASE_ORDERS_VIEW, PERMISSIONS.PURCHASE_ORDERS_MANAGE,
+    PERMISSIONS.CUSTOMERS_VIEW, PERMISSIONS.CUSTOMERS_MANAGE,
+    PERMISSIONS.KHATTA_VIEW, PERMISSIONS.KHATTA_MANAGE,
+    PERMISSIONS.BILLING_CREATE, PERMISSIONS.BILLING_VIEW_HISTORY,
+    PERMISSIONS.EMPLOYEES_VIEW,
+    PERMISSIONS.REPORTS_VIEW,
+    PERMISSIONS.DASHBOARD_VIEW,
+  ],
+
+  [ROLES.CASHIER]: [
+    PERMISSIONS.PRODUCTS_VIEW,
+    PERMISSIONS.CATEGORIES_VIEW,
+    PERMISSIONS.CUSTOMERS_VIEW, PERMISSIONS.CUSTOMERS_MANAGE,
+    PERMISSIONS.KHATTA_VIEW, PERMISSIONS.KHATTA_MANAGE,
+    PERMISSIONS.BILLING_CREATE, PERMISSIONS.BILLING_VIEW_HISTORY,
+    PERMISSIONS.DASHBOARD_VIEW,
+  ],
+
+  [ROLES.INVENTORY_STAFF]: [
+    PERMISSIONS.PRODUCTS_VIEW, PERMISSIONS.PRODUCTS_MANAGE,
+    PERMISSIONS.CATEGORIES_VIEW,
+    PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.INVENTORY_MANAGE,
+    PERMISSIONS.SUPPLIERS_VIEW,
+    PERMISSIONS.PURCHASE_ORDERS_VIEW, PERMISSIONS.PURCHASE_ORDERS_MANAGE,
+    PERMISSIONS.DASHBOARD_VIEW,
+  ],
+};
+
+function getPermissionsForRole(role) {
+  return ROLE_PERMISSIONS[role] || [];
+}
+
+function roleHasPermission(role, permission) {
+  if (role === ROLES.OWNER) return true;
+  return (ROLE_PERMISSIONS[role] || []).includes(permission);
+}
+
+module.exports = {
+  ROLES,
+  ALL_ROLES,
+  PERMISSIONS,
+  ALL_PERMISSIONS,
+  ROLE_PERMISSIONS,
+  getPermissionsForRole,
+  roleHasPermission,
+};
