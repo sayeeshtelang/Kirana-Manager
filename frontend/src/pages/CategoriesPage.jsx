@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { categoryService } from '../services/categoryService';
 import { useAuth } from '../context/AuthContext';
@@ -56,10 +57,14 @@ export default function CategoriesPage() {
         <Card className="divide-y divide-[var(--color-border)]">
           {categories.map((c) => (
             <div key={c._id} className="flex items-center justify-between px-4 py-3">
-              <div>
+              <Link
+                to={`/products?category=${encodeURIComponent(c._id)}`}
+                className="min-w-0 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]/40"
+                aria-label={`View products in ${c.name}`}
+              >
                 <p className="font-medium text-[var(--color-ink)]">{c.name}</p>
                 {c.description && <p className="text-xs text-[var(--color-ink-soft)]">{c.description}</p>}
-              </div>
+              </Link>
               {canManage && (
                 <div className="flex items-center gap-1">
                   <button onClick={() => { setEditing(c); setModalOpen(true); }} className="p-1.5 text-[var(--color-ink-soft)] hover:text-[var(--color-brand-600)]" aria-label="Edit"><Pencil size={15} /></button>

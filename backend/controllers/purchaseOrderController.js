@@ -94,6 +94,7 @@ const receivePurchaseOrder = asyncHandler(async (req, res) => {
 
         const before = product.stockQuantity;
         const after = before + item.quantity;
+        product.costPrice = (before * product.costPrice + item.quantity * item.unitCost) / after;
         product.stockQuantity = after;
         await product.save({ session });
 

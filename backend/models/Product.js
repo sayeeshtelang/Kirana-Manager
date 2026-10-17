@@ -11,7 +11,7 @@ const productSchema = new mongoose.Schema(
     unit: { type: String, enum: ['kg', 'g', 'l', 'ml', 'pcs', 'box', 'dozen'], default: 'pcs' },
 
     // Prices are in INR (paise not used; store as rupees with 2 decimals).
-    costPrice: { type: Number, required: true, min: 0 },
+    costPrice: { type: Number, default: 0, min: 0 },
     sellingPrice: { type: Number, required: true, min: 0 },
     mrp: { type: Number, min: 0 },
     taxPercent: { type: Number, default: 0, min: 0, max: 100 },

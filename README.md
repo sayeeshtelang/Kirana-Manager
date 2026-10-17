@@ -7,7 +7,7 @@ Kirana Manager helps grocery stores manage daily operations from one place: prod
 ## Features
 
 - Dashboard with sales and inventory summaries
-- Product and category management
+- Product and category management, with category links to browse matching products
 - Stock tracking and inventory movements
 - Supplier and purchase order management
 - Customer records and khatta credit tracking
@@ -92,6 +92,10 @@ Open `http://localhost:5173` in your browser. The API health endpoint is availab
 3. Invite team members from the team settings and assign their roles.
 4. Team members accept their invitation and only receive the permissions assigned to their role.
 5. Use the business switcher to move between businesses connected to the same account.
+
+## Browsing products by category
+
+Open **Categories** and select a category name to see its products on the Products page. The Products page also has a category filter; category filtering can be combined with product search, and the results are paginated.
 
 ## Multi-business security
 

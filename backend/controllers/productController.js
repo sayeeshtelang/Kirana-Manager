@@ -39,11 +39,11 @@ const getProduct = asyncHandler(async (req, res) => {
 });
 
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, sku, barcode, category, unit, costPrice, sellingPrice, mrp, taxPercent, stockQuantity, lowStockThreshold } = req.body;
+  const { name, sku, barcode, category, unit, sellingPrice, mrp, taxPercent, lowStockThreshold } = req.body;
 
-  if (!name || costPrice === undefined || sellingPrice === undefined) {
+  if (!name || sellingPrice === undefined) {
     res.status(400);
-    throw new Error('Name, cost price, and selling price are required.');
+    throw new Error('Name and selling price are required.');
   }
 
   let imageUrl = '';
@@ -61,11 +61,9 @@ const createProduct = asyncHandler(async (req, res) => {
     barcode,
     category: category || undefined,
     unit,
-    costPrice,
     sellingPrice,
     mrp,
     taxPercent,
-    stockQuantity: stockQuantity || 0,
     lowStockThreshold,
     imageUrl,
     imagePublicId,
@@ -82,7 +80,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   }
 
   const editableFields = [
-    'name', 'sku', 'barcode', 'category', 'unit', 'costPrice', 'sellingPrice',
+    'name', 'sku', 'barcode', 'category', 'unit', 'sellingPrice',
     'mrp', 'taxPercent', 'lowStockThreshold', 'isActive',
   ];
   for (const field of editableFields) {

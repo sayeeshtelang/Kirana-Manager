@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Search, Plus, Minus, Trash2, ShoppingCart, X } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, ImagePlus } from 'lucide-react';
 import { productService } from '../services/productService';
 import { customerService } from '../services/customerService';
 import { billService } from '../services/billService';
@@ -113,6 +113,13 @@ export default function PosPage() {
                 disabled={p.stockQuantity <= 0}
                 className="text-left bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-3 hover:border-[var(--color-brand-500)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
+                <div className="h-28 w-full mb-3 rounded-md overflow-hidden bg-[var(--color-surface-sunken)] flex items-center justify-center text-[var(--color-ink-soft)]">
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <ImagePlus size={24} />
+                  )}
+                </div>
                 <p className="font-medium text-sm text-[var(--color-ink)] line-clamp-2">{p.name}</p>
                 <p className="text-xs text-[var(--color-ink-soft)] mt-1">{formatINR(p.sellingPrice)} / {p.unit}</p>
                 <p className="text-xs mt-1">
@@ -191,12 +198,49 @@ export default function PosPage() {
       {lastBill && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setLastBill(null)} />
-          <div className="relative bg-[var(--color-surface)] rounded-xl shadow-xl w-full max-w-sm p-5">
+          <div className="relative bg-[var(--color-surface)] rounded-xl shadow-xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto">
             <button onClick={() => setLastBill(null)} className="absolute top-4 right-4 text-[var(--color-ink-soft)]" aria-label="Close"><X size={18} /></button>
-            <p className="font-semibold text-[var(--color-brand-700)] mb-1">Sale completed</p>
-            <p className="text-2xl font-bold text-[var(--color-ink)]">{lastBill.invoiceNumber}</p>
-            <p className="text-sm text-[var(--color-ink-soft)] mt-1">Total: {formatINR(lastBill.totalAmount)}</p>
-            <Button className="w-full mt-4" onClick={() => setLastBill(null)}>New sale</Button>
+            <div className="border-b border-[var(--color-border)] pb-4 mb-4">
+              <p className="font-semibold text-[var(--color-brand-700)] mb-1">Sale completed</p>
+              <p className="text-2xl font-bold text-[var(--color-ink)]">{lastBill.invoiceNumber}</p>
+              <p className="text-sm text-[var(--color-ink-soft)] mt-1">{new Date(lastBill.createdAt).toLocaleString('en-IN')}</p>
+              {lastBill.customer?.name && <p className="text-sm text-[var(--color-ink-soft)]">Customer: {lastBill.customer.name}</p>}
+            </div>
+
+            <div className="overflow-x-auto border border-[var(--color-border)] rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="bg-[var(--color-surface-sunken)] text-left text-xs text-[var(--color-ink-soft)]">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Item</th>
+                    <th className="px-3 py-2 font-medium text-right">Qty</th>
+                    <th className="px-3 py-2 font-medium text-right">Price</th>
+                    <th className="px-3 py-2 font-medium text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lastBill.items.map((item, index) => (
+                    <tr key={`${item.product || item.name}-${index}`} className="border-t border-[var(--color-border)]">
+                      <td className="px-3 py-2.5 font-medium">{item.name}</td>
+                      <td className="px-3 py-2.5 text-right">{item.quantity}</td>
+                      <td className="px-3 py-2.5 text-right">{formatINR(item.unitPrice)}</td>
+                      <td className="px-3 py-2.5 text-right font-medium">{formatINR(item.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end mt-4">
+              <div className="w-full sm:w-72 space-y-2 text-sm">
+                <div className="flex justify-between text-[var(--color-ink-soft)]"><span>Subtotal</span><span>{formatINR(lastBill.subtotal)}</span></div>
+                <div className="flex justify-between text-[var(--color-ink-soft)]"><span>Tax</span><span>{formatINR(lastBill.taxAmount)}</span></div>
+                {lastBill.discountAmount > 0 && <div className="flex justify-between text-[var(--color-ink-soft)]"><span>Discount</span><span>- {formatINR(lastBill.discountAmount)}</span></div>}
+                <div className="flex justify-between border-t border-[var(--color-border)] pt-2 text-base font-semibold"><span>Total</span><span>{formatINR(lastBill.totalAmount)}</span></div>
+                <div className="flex justify-between text-[var(--color-ink-soft)]"><span>Payment</span><span className="capitalize">{lastBill.paymentMethod}</span></div>
+              </div>
+            </div>
+
+            <Button className="w-full mt-5" onClick={() => setLastBill(null)}>New sale</Button>
           </div>
         </div>
       )}

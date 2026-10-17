@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Bill = require('../models/Bill');
+const PurchaseOrder = require('../models/PurchaseOrder');
 
 // @desc  Sales report grouped by day/week/month within a date range.
 // @route GET /api/reports/sales?from=&to=&groupBy=day|month
@@ -89,4 +90,59 @@ const paymentMethodReport = asyncHandler(async (req, res) => {
   res.json({ breakdown: results.map((r) => ({ method: r._id, total: r.total, count: r.count })) });
 });
 
-module.exports = { salesReport, productPerformanceReport, paymentMethodReport };
+// @desc  Purchase report grouped by supplier within a date range.
+// @route GET /api/reports/purchases?from=&to=
+const purchaseReport = asyncHandler(async (req, res) => {
+  const { from, to } = req.query;
+  const match = { business: req.businessId };
+  if (from || to) {
+    match.createdAt = {};
+    if (from) match.createdAt.$gte = new Date(from);
+    if (to) match.createdAt.$lte = new Date(to);
+  }
+
+  const results = await PurchaseOrder.aggregate([
+    { $match: match },
+    {
+      $group: {
+        _id: '$supplier',
+        orderCount: { $sum: 1 },
+        totalPurchases: { $sum: '$totalAmount' },
+        receivedPurchases: {
+          $sum: { $cond: [{ $eq: ['$status', 'received'] }, '$totalAmount', 0] },
+        },
+        itemQuantity: {
+          $sum: {
+            $reduce: {
+              input: '$items',
+              initialValue: 0,
+              in: { $add: ['$$value', '$$this.quantity'] },
+            },
+          },
+        },
+      },
+    },
+    { $lookup: { from: 'suppliers', localField: '_id', foreignField: '_id', as: 'supplier' } },
+    { $unwind: { path: '$supplier', preserveNullAndEmptyArrays: true } },
+    { $sort: { totalPurchases: -1 } },
+  ]);
+  const orders = await PurchaseOrder.find(match)
+    .populate('supplier', 'name')
+    .populate('items.product', 'name sku unit')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  res.json({
+    purchases: results.map((result) => ({
+      _id: result._id,
+      supplier: result.supplier?.name || 'Unknown supplier',
+      orderCount: result.orderCount,
+      itemQuantity: result.itemQuantity,
+      totalPurchases: result.totalPurchases,
+      receivedPurchases: result.receivedPurchases,
+    })),
+    orders,
+  });
+});
+
+module.exports = { salesReport, productPerformanceReport, paymentMethodReport, purchaseReport };

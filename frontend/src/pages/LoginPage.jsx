@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Store } from 'lucide-react';
+import { Eye, EyeOff, Store } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input } from '../components/ui';
 
@@ -10,6 +10,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [serverError, setServerError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -49,13 +50,25 @@ export default function LoginPage() {
             error={errors.email?.message}
             {...register('email', { required: 'Email is required' })}
           />
-          <Input
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            error={errors.password?.message}
-            {...register('password', { required: 'Password is required' })}
-          />
+          <div className="relative">
+            <Input
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              error={errors.password?.message}
+              className="pr-10"
+              {...register('password', { required: 'Password is required' })}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((visible) => !visible)}
+              className="absolute right-2 top-7 p-1 text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]/40 rounded"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
           <div className="flex justify-end -mt-2">
             <Link to="/forgot-password" className="text-xs text-[var(--color-brand-600)] hover:underline">
               Forgot password?

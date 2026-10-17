@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { Plus, Trash2, PackageCheck, Ban } from 'lucide-react';
+import { Plus, Trash2, PackageCheck, Ban, Eye } from 'lucide-react';
 import { purchaseOrderService } from '../services/purchaseOrderService';
 import { supplierService } from '../services/supplierService';
 import { productService } from '../services/productService';
@@ -20,6 +20,9 @@ export default function PurchaseOrdersPage() {
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [detailOrder, setDetailOrder] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
 
   const load = async () => {
     setStatus('loading');
@@ -61,6 +64,19 @@ export default function PurchaseOrdersPage() {
     }
   };
 
+  const handleView = async (id) => {
+    setDetailLoading(true);
+    setDetailError('');
+    try {
+      const result = await purchaseOrderService.get(id);
+      setDetailOrder(result.order);
+    } catch (err) {
+      setDetailError(err.response?.data?.message || 'Unable to load this purchase order.');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   if (status === 'loading') return <LoadingBlock />;
   if (status === 'error') return <ErrorState message={error} />;
 
@@ -85,7 +101,7 @@ export default function PurchaseOrdersPage() {
                 <th className="px-4 py-3 font-medium">Supplier</th>
                 <th className="px-4 py-3 font-medium">Total</th>
                 <th className="px-4 py-3 font-medium">Status</th>
-                {canManage && <th className="px-4 py-3 font-medium text-right">Actions</th>}
+                <th className="px-4 py-3 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -95,16 +111,15 @@ export default function PurchaseOrdersPage() {
                   <td className="px-4 py-3 text-[var(--color-ink-soft)]">{o.supplier?.name}</td>
                   <td className="px-4 py-3">{formatINR(o.totalAmount)}</td>
                   <td className="px-4 py-3"><Badge tone={STATUS_TONE[o.status]}>{o.status.replace('_', ' ')}</Badge></td>
-                  {canManage && (
-                    <td className="px-4 py-3 text-right">
-                      {!['received', 'cancelled'].includes(o.status) && (
-                        <>
-                          <button onClick={() => handleReceive(o._id)} className="p-1.5 text-[var(--color-ink-soft)] hover:text-[var(--color-brand-600)]" aria-label="Receive"><PackageCheck size={15} /></button>
-                          <button onClick={() => handleCancel(o._id)} className="p-1.5 text-[var(--color-ink-soft)] hover:text-[var(--color-danger-600)]" aria-label="Cancel"><Ban size={15} /></button>
-                        </>
-                      )}
-                    </td>
-                  )}
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={() => handleView(o._id)} className="p-1.5 text-[var(--color-ink-soft)] hover:text-[var(--color-brand-600)]" aria-label="View purchase order"><Eye size={15} /></button>
+                    {canManage && !['received', 'cancelled'].includes(o.status) && (
+                      <>
+                        <button onClick={() => handleReceive(o._id)} className="p-1.5 text-[var(--color-ink-soft)] hover:text-[var(--color-brand-600)]" aria-label="Receive"><PackageCheck size={15} /></button>
+                        <button onClick={() => handleCancel(o._id)} className="p-1.5 text-[var(--color-ink-soft)] hover:text-[var(--color-danger-600)]" aria-label="Cancel"><Ban size={15} /></button>
+                      </>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -113,6 +128,72 @@ export default function PurchaseOrdersPage() {
       )}
 
       <CreatePOModal open={modalOpen} onClose={() => setModalOpen(false)} suppliers={suppliers} products={products} onSaved={() => { setModalOpen(false); load(); }} />
+
+      <Modal open={!!detailOrder || detailLoading || !!detailError} onClose={() => { setDetailOrder(null); setDetailError(''); }} title={detailOrder?.poNumber || 'Purchase order'} wide>
+        {detailLoading && <LoadingBlock />}
+        {!detailLoading && detailError && <ErrorState message={detailError} />}
+        {!detailLoading && detailOrder && <PurchaseOrderDetails order={detailOrder} />}
+      </Modal>
+    </div>
+  );
+}
+
+function PurchaseOrderDetails({ order }) {
+  return (
+    <div className="space-y-5 text-sm">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Supplier</p>
+          <p className="font-medium mt-1">{order.supplier?.name || '—'}</p>
+          {order.supplier?.phone && <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">{order.supplier.phone}</p>}
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Status</p>
+          <div className="mt-1"><Badge tone={STATUS_TONE[order.status]}>{order.status.replace('_', ' ')}</Badge></div>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Ordered</p>
+          <p className="font-medium mt-1">{new Date(order.orderedAt || order.createdAt).toLocaleDateString('en-IN')}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Received</p>
+          <p className="font-medium mt-1">{order.receivedAt ? new Date(order.receivedAt).toLocaleDateString('en-IN') : 'Not received'}</p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto border border-[var(--color-border)] rounded-lg">
+        <table className="w-full text-sm">
+          <thead className="bg-[var(--color-surface-sunken)] text-left text-xs text-[var(--color-ink-soft)]">
+            <tr>
+              <th className="px-3 py-2 font-medium">Product</th>
+              <th className="px-3 py-2 font-medium">SKU</th>
+              <th className="px-3 py-2 font-medium text-right">Quantity</th>
+              <th className="px-3 py-2 font-medium text-right">Unit cost</th>
+              <th className="px-3 py-2 font-medium text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.items.map((item, index) => (
+              <tr key={`${item.product?._id || item.product}-${index}`} className="border-t border-[var(--color-border)]">
+                <td className="px-3 py-2.5 font-medium">{item.product?.name || 'Product unavailable'}</td>
+                <td className="px-3 py-2.5 text-[var(--color-ink-soft)]">{item.product?.sku || '—'}</td>
+                <td className="px-3 py-2.5 text-right">{item.quantity} {item.product?.unit || ''}</td>
+                <td className="px-3 py-2.5 text-right">{formatINR(item.unitCost)}</td>
+                <td className="px-3 py-2.5 text-right font-medium">{formatINR(item.total)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex justify-end">
+        <div className="w-full sm:w-72 space-y-2">
+          <div className="flex justify-between text-[var(--color-ink-soft)]"><span>Subtotal</span><span>{formatINR(order.subtotal)}</span></div>
+          <p className="text-xs text-[var(--color-ink-soft)]">Prices are inclusive of all taxes.</p>
+          <div className="flex justify-between border-t border-[var(--color-border)] pt-2 text-base font-semibold"><span>Total (tax inclusive)</span><span>{formatINR(order.totalAmount)}</span></div>
+        </div>
+      </div>
+      {order.notes && <p className="text-[var(--color-ink-soft)]"><strong className="text-[var(--color-ink)]">Notes:</strong> {order.notes}</p>}
     </div>
   );
 }
